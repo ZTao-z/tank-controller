@@ -1,5 +1,18 @@
 // 51单片机
 #include "reg52.h"
+#define ENGINE_FORWARD(in1, in2) (in1 = 1, in2 = 0)
+#define ENGINE_BACKWARD(in1, in2) (in1 = 0, in2 = 1)
+#define ENGINE_STOP(in1, in2) (in1 = 0, in2 = 0)
+
+enum TANK_ACTION
+{
+  MOVE_FORWARD = 0x30,
+  MOVE_BACKWARD = 0x31,
+  TURN_LEFT = 0x32,
+  TURN_RIGHT = 0x33,
+  TURRET_TURN_LEFT = 0x34,
+  TURRET_TURN_RIGHT = 0x35
+};
 
 typedef unsigned int uint;
 typedef unsigned char uchar;
@@ -10,6 +23,8 @@ int time;           //定义占空比的变量
 
 sbit ain1 = P1 ^ 0;
 sbit ain2 = P1 ^ 1;
+sbit bin1 = P1 ^ 2;
+sbit bin2 = P1 ^ 3;
 
 sbit PWM = P2 ^ 0; // P2.0输出pwm
 
@@ -44,33 +59,74 @@ void delay1ms(uint ms)
       ;
 }
 
+void test_signal()
+{
+  if (signal == MOVE_FORWARD)
+  {
+    led1 = 0; //本单片机P2^1为小灯
+    led2 = 1;
+  }
+  else if (signal == MOVE_BACKWARD)
+  {
+    led1 = 1;
+    led2 = 0;
+  }
+  else
+  {
+    led1 = 1;
+    led2 = 1;
+  }
+}
+
+// 左发动机
+void engine_left()
+{
+  if (signal == MOVE_FORWARD)
+  {
+    ENGINE_FORWARD(ain1, ain2);
+  }
+  else if (signal == MOVE_BACKWARD)
+  {
+    ENGINE_BACKWARD(ain1, ain2);
+  }
+  else
+  {
+    ENGINE_STOP(ain1, ain2);
+  }
+}
+
+// 右发动机
+void engine_right()
+{
+  if (signal == MOVE_FORWARD)
+  {
+    ENGINE_FORWARD(bin1, bin2);
+  }
+  else if (signal == MOVE_BACKWARD)
+  {
+    ENGINE_BACKWARD(bin1, bin2);
+  }
+  else
+  {
+    ENGINE_STOP(bin1, bin2);
+  }
+}
+
+// 炮塔转向电机
+void engine_turret()
+{
+}
+
 int main()
 {
   UART_init(); //波特率9600
   Timer0_init();
   while (1)
   {
-    if (signal == 0x31)
-    {
-      led1 = 0; //本单片机P2^1为小灯
-      led2 = 1;
-      ain1 = 1;
-      ain2 = 0;
-    }
-    else if (signal == 0x32)
-    {
-      led1 = 1;
-      led2 = 0;
-      ain1 = 0;
-      ain2 = 1;
-    }
-    else
-    {
-      led1 = 1;
-      led2 = 1;
-      ain1 = 0;
-      ain2 = 0;
-    }
+    test_signal();
+    engine_left();
+    engine_right();
+    engine_turret();
   }
 }
 
