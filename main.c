@@ -11,7 +11,10 @@ enum TANK_ACTION
   TURN_LEFT = 0x32,
   TURN_RIGHT = 0x33,
   TURRET_TURN_LEFT = 0x34,
-  TURRET_TURN_RIGHT = 0x35
+  TURRET_TURN_RIGHT = 0x35,
+  GUN_FIRE = 0x36,
+  GUN_UP = 0x37,
+  GUN_DOWN = 0x38
 };
 
 typedef unsigned int uint;
@@ -21,10 +24,14 @@ sbit led2 = P2 ^ 1; //根据各位实际的单片机上的小灯硬件连接，�
 uint signal = 0;    //传递数据位
 int time;           //定义占空比的变量
 
-sbit ain1 = P1 ^ 0;
-sbit ain2 = P1 ^ 1;
-sbit bin1 = P1 ^ 2;
-sbit bin2 = P1 ^ 3;
+sbit engineLeftIn1 = P1 ^ 0;
+sbit engineLeftIn2 = P1 ^ 1;
+sbit engineRightIn1 = P1 ^ 2;
+sbit engineRightIn2 = P1 ^ 3;
+sbit turretIn1 = P1 ^ 4;
+sbit turretIn2 = P1 ^ 5;
+sbit gunFire = P1 ^ 6;
+sbit gunUpDown = P1 ^ 7;
 
 sbit PWM = P2 ^ 0; // P2.0输出pwm
 
@@ -83,15 +90,15 @@ void engine_left()
 {
   if (signal == MOVE_FORWARD)
   {
-    ENGINE_FORWARD(ain1, ain2);
+    ENGINE_FORWARD(engineLeftIn1, engineLeftIn2);
   }
   else if (signal == MOVE_BACKWARD)
   {
-    ENGINE_BACKWARD(ain1, ain2);
+    ENGINE_BACKWARD(engineLeftIn1, engineLeftIn2);
   }
   else
   {
-    ENGINE_STOP(ain1, ain2);
+    ENGINE_STOP(engineLeftIn1, engineLeftIn2);
   }
 }
 
@@ -100,21 +107,49 @@ void engine_right()
 {
   if (signal == MOVE_FORWARD)
   {
-    ENGINE_FORWARD(bin1, bin2);
+    ENGINE_FORWARD(engineRightIn1, engineRightIn2);
   }
   else if (signal == MOVE_BACKWARD)
   {
-    ENGINE_BACKWARD(bin1, bin2);
+    ENGINE_BACKWARD(engineRightIn1, engineRightIn2);
   }
   else
   {
-    ENGINE_STOP(bin1, bin2);
+    ENGINE_STOP(engineRightIn1, engineRightIn2);
   }
 }
 
 // 炮塔转向电机
 void engine_turret()
 {
+  if (signal == TURRET_TURN_LEFT)
+  {
+    ENGINE_FORWARD(turretIn1, turretIn2);
+  }
+  else if (signal == TURRET_TURN_RIGHT)
+  {
+    ENGINE_BACKWARD(turretIn1, turretIn2);
+  }
+  else
+  {
+    ENGINE_STOP(turretIn1, turretIn2);
+  }
+}
+
+void gun_fire() {
+  if (signal == GUN_FIRE) {
+    gunFire = 1;
+    delay1ms(2);
+    gunFire = 0;
+  }
+}
+
+void gun_up() {
+
+}
+
+void gun_down() {
+
 }
 
 int main()
@@ -127,6 +162,9 @@ int main()
     engine_left();
     engine_right();
     engine_turret();
+    gun_fire();
+    gun_up();
+    gun_down();
   }
 }
 
