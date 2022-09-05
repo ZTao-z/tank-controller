@@ -3,6 +3,8 @@
 #define ENGINE_FORWARD(in1, in2) (in1 = 1, in2 = 0)
 #define ENGINE_BACKWARD(in1, in2) (in1 = 0, in2 = 1)
 #define ENGINE_STOP(in1, in2) (in1 = 0, in2 = 0)
+#define min(a, b) a < b? a : b
+#define max(a,b) a > b? a : b
 
 enum TANK_ACTION
 {
@@ -30,10 +32,17 @@ sbit engineRightIn1 = P1 ^ 2;
 sbit engineRightIn2 = P1 ^ 3;
 sbit turretIn1 = P1 ^ 4;
 sbit turretIn2 = P1 ^ 5;
-sbit gunFire = P1 ^ 6;
-sbit gunUpDown = P1 ^ 7;
 
 sbit PWM = P2 ^ 0; // P2.0输出pwm
+
+short gunUpDownFlag = 0;
+short gunUpDownCounter = 0;
+int gunUpDownTimer = 0;
+sbit gunUpDownPWM = P2 ^ 1;
+
+int gunFireTimer = 0;
+short gunFireCounter = 0;
+sbit gunFirePWM = P2 ^ 2;
 
 void UART_init() // 设置串行通信 本晶振为11.0592MHZ，其他的就自己算一下应该设置多少
 {
@@ -138,18 +147,18 @@ void engine_turret()
 
 void gun_fire() {
   if (signal == GUN_FIRE) {
-    gunFire = 1;
-    delay1ms(2);
-    gunFire = 0;
+    gunFireCounter = 30;
   }
 }
 
-void gun_up() {
-
-}
-
-void gun_down() {
-
+void gun_up_down() {
+  if (signal == GUN_UP) {
+    gunUpDownFlag = 1;
+  } else if (signal == GUN_DOWN) {
+    gunUpDownFlag = 2;
+  } else {
+    gunUpDownFlag = 0;
+  }
 }
 
 int main()
@@ -163,8 +172,7 @@ int main()
     engine_right();
     engine_turret();
     gun_fire();
-    gun_up();
-    gun_down();
+    gun_up_down();
   }
 }
 
@@ -188,6 +196,8 @@ void TIMER_INTERRUPT() interrupt 1
   TR0 = 1;    //打开定时器
 
   time++;
+  gunUpDownTimer++;
+  gunFireTimer++;
 
   if (time >= 100)
     time = 0;
@@ -196,4 +206,34 @@ void TIMER_INTERRUPT() interrupt 1
     PWM = 1;
   else
     PWM = 0;
+
+  // 俯仰PWM
+  if (gunUpDownTimer >= 100) {
+    gunUpDownTimer = 0;
+  }
+
+  if (gunUpDownTimer < gunUpDownCounter) {
+    gunUpDownPWM = 1;
+    if (gunUpDownFlag == 0) {
+      // do nothing
+    } else if (gunUpDownFlag == 1) {
+      gunUpDownCounter = min(30, gunUpDownCounter + 1);
+    } else {
+      gunUpDownCounter = max(0, gunUpDownCounter - 1);
+    }
+  } else {
+    gunUpDownPWM = 0;
+  }
+
+  // 伸缩PWM
+  if (gunFireTimer >= 100) {
+    gunFireTimer = 0;
+  }
+
+  if (gunFireTimer < gunFireCounter) {
+    gunFireCounter = max(0, gunFireCounter - 1);
+    gunFirePWM = 1;
+  } else {
+    gunFirePWM = 0;
+  }
 }
